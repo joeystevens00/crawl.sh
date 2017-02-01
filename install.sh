@@ -25,11 +25,14 @@ if [ ! -f $mysqlAuthFile ]; then
                 			;;
                 		n)
 							echo "Run crawler.sql before running crawl.sh"
-							break;;
+							break
+							;;
 						*)
 							echo 'Select [y|n]'
 						esac
 				done
+				break
+				;;
             n)
 				echo "Edit the file $mysqlAuthFile and then run crawler.sql"
                 break;
