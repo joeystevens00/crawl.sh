@@ -1,6 +1,8 @@
 #!/bin/bash
 source crawler.conf.sh
 
+shopt -s nocasematch
+
 checkIfInstalled.sh parallel
 checkIfInstalled.sh mysql
 checkIfInstalled.sh curl
@@ -9,6 +11,33 @@ if [ ! -f $mysqlAuthFile ]; then
 	echo "Mysql auth config file not found"
 	echo "Creating at: $mysqlAuthFile"
 	echo -e "[client]\nuser=\"\"\npassword=\"\"\nhost=\"\"\ndatabase=\"\"" > $mysqlAuthFile
+    echo "Edit the file now (will open vi)? [y|n]" 
+	while read answer; do
+    	case "$answer" in
+        	y)
+            	vi $mysqlAuthFile
+            	echo "Create the required database and table now? [y|n]"
+            	while read answer; do
+            		case "$answer" in
+            			y)
+							mysql --defaults-extra-file=$mysqlAuthFile  < crawler.sql
+                			break
+                			;;
+                		n)
+							echo "Run crawler.sql before running crawl.sh"
+							break;;
+						*)
+							echo 'Select [y|n]'
+						esac
+				done
+            n)
+				echo "Edit the file $mysqlAuthFile and then run crawler.sql"
+                break;
+                ;;
+            *)
+            	echo 'Select [y|n]'
+    	esac;
+	done
 fi
 
 parallelVersion=$(parallel --version)
