@@ -132,7 +132,9 @@ function crawlLinks() {
 	linklist=$(getLinks "$resp" "$url") 
 	echo -e "$linklist" | multithreaded "ifNoDupesThenLog \"{}\" \"$url\" \"$domain\""
 	for i in $(echo -e "$linklist"); do
-		goDeeper "$i" # Where are these \s and ?s coming from??
+		if [[ "$i" != "$url" ]]; then 
+			goDeeper "$i" # Where are these \s and ?s coming from??
+		fi
 	done	
 }
 export -f multithreaded
@@ -149,6 +151,6 @@ export -f doNothing
 export -f removeWhiteSpace
 export -f cleanMysteryCharacters
 
-url="https://www.example.com"
+url="https://www.yahoo.com"
 resp=$(curl -s $url)
 crawlLinks "$resp" "$url" 
