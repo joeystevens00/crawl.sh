@@ -15,9 +15,12 @@ function removeWhiteSpace() {
 }
 
 function multithreaded () {
+	# Takes data from /dev/stdin
+	# Executes arg
+	# Examples seq 1 10 | multithreaded echo {}
 	source crawler.conf.sh 
 	command_to_execute="$1"
-	parallel --no-notice -j $threads "$command_to_execute";
+	parallel --no-notice --no-run-if-empty -j $threads "$command_to_execute";
 }
 
 function escapeUrl() {
@@ -65,8 +68,8 @@ function getLinks() {
 	already_built_links=$(echo -e "$hrefTags" | grep -iE "htt(p|ps)://") # https://stuff.com
 
 	linklist=$(echo -e "$rebuilt_links_that_build_on_domain\n$rebuilt_protocol_relative_links\n$already_built_links")
-
-	echo -e "$linklist" 
+	linklist=$(echo -e "$linklist" | awk '!a[$0]++' ) # Removes duplicates from the list 
+	echo -e "$linklist"
 }
 
 function checkForDupes() {
