@@ -40,6 +40,12 @@ function executeQuery() {
 	mysql --defaults-extra-file="$mysqlAuthFile" --execute="$query"
 }
 
+function overwriteTmpFile() {
+	source crawler.conf.sh
+	tmpfile="$tmpdir/.crawler.tmp"
+	echo -e "$1" > $tmpfile
+}
+
 function log() {
 	datetime=$(getDateTime)
 	link="$1"
@@ -47,6 +53,7 @@ function log() {
 	domain="$3"
 	SQL="insert into links values(id, \"$link\", \"$locationDiscovered\", \"$domain\", \"$datetime\");"
 	executeQuery "$SQL"
+	overwriteTmpFile "$link\n$locationDiscovered\n$domain\n$datetime"
 }
 
 function getLinks() {
@@ -153,7 +160,8 @@ export -f checkForDupes
 export -f doNothing
 export -f removeWhiteSpace
 export -f cleanMysteryCharacters
+export -f overwriteTmpFile
 
-url="https://www.yahoo.com"
+url="https://twitter.com"
 resp=$(curl -s $url)
 crawlLinks "$resp" "$url" 
