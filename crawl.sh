@@ -1,3 +1,7 @@
+#!/bin/bash
+# AUTHOR: Joey Stevens
+# DESCRIPTION: A multithreaded web crawler
+
 source crawler.conf.sh
 trap dontExit EXIT
 trap "killme" INT 
