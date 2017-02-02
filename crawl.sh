@@ -1,6 +1,11 @@
 source crawler.conf.sh
 trap dontExit EXIT
-trap "kill $$" INT
+trap "killme" INT 
+
+function killme() {
+	pgrep -f "$0" | parallel pgrep -P {} | parallel kill -9 {} # Kill child procs
+	pgrep -f "$0" | parallel kill -9 {} # Kill parent procs
+}
 
 function reallyDontExit() {
 	# If we hit more than one deadend
@@ -165,57 +170,9 @@ function crawlLinks() {
 		fi
 	done	
 }
-export -f multithreaded
-export -f escapeUrl
-export -f getDateTime
-export -f executeQuery
-export -f log
-export -f getLinks
-export -f goDeeper
-export -f crawlLinks
-export -f ifNoDupesThenLog
-export -f checkForDupes
-export -f doNothing
-export -f removeWhiteSpace
-export -f cleanMysteryCharacters
-export -f overwriteTmpFile
 
-displayHelp() {
-	echo "Placeholder help"
-	sleep 1
-	less $0
-	exit 1
-}
 
-argParse() {
-	for i in "$@"; do
-	case $i in
-		-u=*|--url=*)
-			url="${i#*=}"
-			shift # past argument=value
-             ;;
-		-t=*|--threads=*)
-    		cthreads="${i#*=}"
-    		shift # past argument=value
-    		;;
-        -h|--help=*)
-    		help=true
-            shift # past argument=value
-        	;;
-    	*)
-	       	help=true # unknown option
-    		;;
-	esac
-	done
-
-	if [ "$help" == true ]; then displayHelp; fi
-
-	if [ -z "$url" ]; then
-		lastLinkChecked=$(head -1 $tmpfile)
-		url=$lastLinkChecked
-	fi
-	resp=$(curl -s $url)
-	crawlLinks "$resp" "$url" 
-}
+source argparse.sh
+source exports.sh
 
 argParse "$@"
