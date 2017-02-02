@@ -1,4 +1,21 @@
 source crawler.conf.sh
+trap dontExit EXIT
+trap "kill $$" INT
+
+function reallyDontExit() {
+	# If we hit more than one deadend
+	dontExit
+}
+
+function dontExit { 
+	source crawler.conf.sh
+	echo "It appears we've hit a deadend.. Crawling somewhere new"
+	url=$(shuf -n1 $sitelist)
+	echo "Crawling $url"
+	resp=$(curl -s $url)
+	crawlLinks "$resp" "$url"
+	reallyDontExit
+}
 
 function doNothing() {
 	echo -n
@@ -20,6 +37,7 @@ function multithreaded () {
 	# Examples seq 1 10 | multithreaded echo {}
 	source crawler.conf.sh 
 	command_to_execute="$1"
+	if [ -n "$cthreads" ]; then threads=$cthreads; fi
 	parallel --no-notice --no-run-if-empty -j $threads "$command_to_execute";
 }
 
@@ -42,7 +60,6 @@ function executeQuery() {
 
 function overwriteTmpFile() {
 	source crawler.conf.sh
-	tmpfile="$tmpdir/.crawler.tmp"
 	echo -e "$1" > $tmpfile
 }
 
@@ -53,7 +70,6 @@ function log() {
 	domain="$3"
 	SQL="insert into links values(id, \"$link\", \"$locationDiscovered\", \"$domain\", \"$datetime\");"
 	executeQuery "$SQL"
-	overwriteTmpFile "$link\n$locationDiscovered\n$domain\n$datetime"
 }
 
 function getLinks() {
@@ -84,6 +100,8 @@ function checkForDupes() {
 	toCheck="$1"
 	url="$2"
 	domain="$3"
+	datetime=$(getDateTime)
+	overwriteTmpFile "$toCheck\n$url\n$domain\n$datetime"
 	url_cleaned=$(echo "$url" | cut -d"/" -f3- | tr -d "/") # Remove protocol and slashes
 	toCheck_cleaned=$(echo "$toCheck" | cut -d"/" -f3- | tr -d "/") # Makes sure that https://github.com matches github.com or http://github.com or https://github.com/
 	if [[ "$url_cleaned" != "$toCheck_cleaned" ]]; then  # If the link we're checking does not equal the URL we started crawlings
@@ -162,6 +180,42 @@ export -f removeWhiteSpace
 export -f cleanMysteryCharacters
 export -f overwriteTmpFile
 
-url="https://twitter.com"
-resp=$(curl -s $url)
-crawlLinks "$resp" "$url" 
+displayHelp() {
+	echo "Placeholder help"
+	sleep 1
+	less $0
+	exit 1
+}
+
+argParse() {
+	for i in "$@"; do
+	case $i in
+		-u=*|--url=*)
+			url="${i#*=}"
+			shift # past argument=value
+             ;;
+		-t=*|--threads=*)
+    		cthreads="${i#*=}"
+    		shift # past argument=value
+    		;;
+        -h|--help=*)
+    		help=true
+            shift # past argument=value
+        	;;
+    	*)
+	       	help=true # unknown option
+    		;;
+	esac
+	done
+
+	if [ "$help" == true ]; then displayHelp; fi
+
+	if [ -z "$url" ]; then
+		lastLinkChecked=$(head -1 $tmpfile)
+		url=$lastLinkChecked
+	fi
+	resp=$(curl -s $url)
+	crawlLinks "$resp" "$url" 
+}
+
+argParse "$@"
