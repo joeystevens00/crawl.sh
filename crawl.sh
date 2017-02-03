@@ -30,10 +30,6 @@ function doNothing() {
 	echo -n
 }
 
-function cleanMysteryCharacters() {
-	#\?\ \? 
-	echo "$1" | sed 's/\\?\\//g' | sed 's/\\?//g'
-}
 
 function removeWhiteSpace() {
 	# Why is this needed? Especially the massive trailing \s ???
@@ -88,16 +84,14 @@ function getLinks() {
 	url="$2"
 	escaped_url=$(escapeUrl "$url")
 	protocol=$(echo "$url" | grep -ioP "htt(ps|p)")
-	hrefTags=$(echo -e "$resp" | grep -ioP "href=.*?>")
-	hrefTags=$(echo -e "$hrefTags" | cut -d'"' -f2- | cut -d '"' -f1) #the links are between quotes... probably
+	links=$(echo -e "$resp" | pup 'a, src, img, link attr{href}')
 
-
-	links_that_build_on_domain=$(echo -e "$hrefTags" | grep -iE "^/([a-z]|[0-9])") # /stuff/things.html
-	protocol_relative_links=$(echo -e "$hrefTags" | grep -iE "^//([a-z]|[0-9])") # //link.com
+	links_that_build_on_domain=$(echo -e "$links" | grep -iE "^/([a-z]|[0-9])") # /stuff/things.html
+	protocol_relative_links=$(echo -e "$links" | grep -iE "^//([a-z]|[0-9])") # //link.com
 
 	rebuilt_links_that_build_on_domain=$(echo -e "$links_that_build_on_domain" | sed "s/^/$escaped_url/g")
 	rebuilt_protocol_relative_links=$(echo -e "$protocol_relative_links" | sed "s/^\/\//$protocol:\/\//g" ) # replace // with $protocl://
-	already_built_links=$(echo -e "$hrefTags" | grep -iE "htt(p|ps)://") # https://stuff.com
+	already_built_links=$(echo -e "$links" | grep -iE "htt(p|ps)://") # https://stuff.com
 
 	linklist=$(echo -e "$rebuilt_links_that_build_on_domain\n$rebuilt_protocol_relative_links\n$already_built_links")
 	linklist=$(echo -e "$linklist" | awk '!a[$0]++' ) # Removes duplicates from the list 
@@ -106,28 +100,28 @@ function getLinks() {
 
 function checkForDupes() {
 	# Returns nothing if duplicate
-	toCheck="$1"
+	link="$1"
 	url="$2"
 	domain="$3"
 	datetime=$(getDateTime)
-	overwriteTmpFile "$toCheck\n$url\n$domain\n$datetime"
+	overwriteTmpFile "$link\n$url\n$domain\n$datetime"
 	url_cleaned=$(echo "$url" | cut -d"/" -f3- | tr -d "/") # Remove protocol and slashes
-	toCheck_cleaned=$(echo "$toCheck" | cut -d"/" -f3- | tr -d "/") # Makes sure that https://github.com matches github.com or http://github.com or https://github.com/
-	if [[ "$url_cleaned" != "$toCheck_cleaned" ]]; then  # If the link we're checking does not equal the URL we started crawlings
+	link_cleaned=$(echo "$link" | cut -d"/" -f3- | tr -d "/") # Makes sure that https://github.com matches github.com or http://github.com or https://github.com/
+	if [[ "$url_cleaned" != "$link_cleaned" ]]; then  # If the link we're checking does not equal the URL we started crawlings
 		linksOnThatDomain=$(executeQuery "SELECT link FROM links WHERE domain=\"$domain\";")
 		if [ -n "$linksOnThatDomain" ]; then  # If there are some links on that domain
 			for link in $(echo -e "$linksOnThatDomain"); do # Iterate through the links
-				if [[ "$toCheck" == "$link" ]]; then # If the link we're checking equals that link
+				if [[ "$link" == "$link" ]]; then # If the link we're checking equals that link
 					doNothing # This means failure
 				else 
-					exactMatch=$(executeQuery "SELECT id FROM links WHERE link=\"$toCheck\" AND locationDiscovered=\"$url\" AND domain=\"$domain\"")
+					exactMatch=$(executeQuery "SELECT id FROM links WHERE link=\"$link\" AND locationDiscovered=\"$url\" AND domain=\"$domain\"")
 					if [ -z "$exactMatch" ]; then  # If there was no match 
 						echo "Not a duplicate" # Success
 					fi
 				fi
 			done
 		else # If there are no links on that domain then do an exact match check
-				exactMatch=$(executeQuery "SELECT id FROM links WHERE link=\"$toCheck\" AND locationDiscovered=\"$url\" AND domain=\"$domain\"")
+				exactMatch=$(executeQuery "SELECT id FROM links WHERE link=\"$link\" AND locationDiscovered=\"$url\" AND domain=\"$domain\"")
 			if [ -z "$exactMatch" ]; then  # If there was no match 
 				echo "Not a duplicate" # Success
 			fi
@@ -143,9 +137,6 @@ ifNoDupesThenLog() {
 	url=$(removeWhiteSpace "$url")
 	domain=$(removeWhiteSpace "$domain")
 
-	#link=$(cleanMysteryCharacters "$link")
-	#url=$(cleanMysteryCharacters "$url")
-	#domain=$(cleanMysteryCharacters "$domain")
 	if [ "$(checkForDupes "$link" "$url" "$domain")" ]; then 
 		echo $link
 		log "$link" "$url" "$domain"
