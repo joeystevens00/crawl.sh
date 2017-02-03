@@ -6,7 +6,7 @@ curl
 GNU paralell   
 mysql-client  
 mysql-server  
-
+[pup](https://github.com/ericchiang/pup)
 
 ## Disclaimer
 It should be without saying but this software is highly experimental.
