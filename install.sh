@@ -6,7 +6,7 @@ shopt -s nocasematch
 checkIfInstalled.sh parallel
 checkIfInstalled.sh mysql
 checkIfInstalled.sh curl
-
+checkIfInstalled.sh pup
 if [ ! -f $mysqlAuthFile ]; then 
 	echo "Mysql auth config file not found"
 	echo "Creating at: $mysqlAuthFile"
