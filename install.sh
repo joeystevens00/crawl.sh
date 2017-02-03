@@ -3,11 +3,40 @@ source crawler.conf.sh
 
 shopt -s nocasematch
 
-checkIfInstalled.sh parallel
-checkIfInstalled.sh mysql
-checkIfInstalled.sh curl
-checkIfInstalled.sh pup
-if [ ! -f $mysqlAuthFile ]; then 
+
+function checkIfInstalled() {
+	command -v $1 >/dev/null 2>&1 || { echo "false"; }
+}
+
+function setupGo() {
+	apt-get install golang
+	godir=$1
+	mkdir "$godir"
+	export GOPATH=$godir
+	echo "export GOPATH=$godir" >> ~/.bashrc
+	go get https://github.com/ericchiang/pup
+	cp $godir/bin/pup /usr/bin
+}
+
+if [[ `whoami` != 'root' ]]; then 
+	echo "Run me as root"
+	exit 1
+elif [ `checkIfInstalled parallel` ] || [ `checkIfInstalled mysql` ] ||
+	[ `checkIfInstalled curl` ] || [ `checkIfInstalled pgrep` ]; then
+	apt-get update 
+	apt-get install mysql-client curl parallel procps
+elif [ `checkIfInstalled pup` ]; then
+	timestamp=`date "+%s"`
+	godir="~/.go"
+	godirtime="$godir-$timestamp"
+	if [ ! -d "$godir" ]; then
+		setupGo "$godir"
+	elif [ ! -d "$godirtime" ]; then
+		setupGo "$godirtime"
+	else 
+		echo "Cannot setup Go at this time"
+	fi
+elif [ ! -f $mysqlAuthFile ]; then 
 	echo "Mysql auth config file not found"
 	echo "Creating at: $mysqlAuthFile"
 	echo -e "[client]\nuser=\"\"\npassword=\"\"\nhost=\"\"\ndatabase=\"\"" > $mysqlAuthFile
