@@ -3,7 +3,7 @@ displayHelp() {
 	echo "Placeholder help"
 	sleep 1
 	less $0
-	exit 1
+	killme
 }
 
 argParse() {
