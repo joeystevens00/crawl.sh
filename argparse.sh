@@ -30,8 +30,14 @@ argParse() {
 	if [ "$help" == true ]; then displayHelp; fi
 
 	if [ -z "$url" ]; then
-		lastLinkChecked=$(head -1 $tmpfile)
-		url=$lastLinkChecked
+		if [ -f "$tmpfile" ]; then 
+			lastLinkChecked=$(head -1 $tmpfile)
+			url=$lastLinkChecked
+		else 
+			echo "No URL passed and this appears to be our first run.."
+			url=$(shuf -n1 $sitelist)
+			echo "Starting with: $url"
+		fi
 	fi
 	resp=$(curl -s $url)
 	crawlLinks "$resp" "$url" 
