@@ -163,7 +163,7 @@ function crawlLinks() {
 		if [[ "$i" != "$url" ]]; then 
 			goDeeper "$i" # Where are these \s and ?s coming from??
 		fi
-	done	
+	done
 }
 
 
