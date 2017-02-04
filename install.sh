@@ -21,11 +21,36 @@ function setupGo() {
 if [[ `whoami` != 'root' ]]; then 
 	echo "Run me as root"
 	exit 1
-elif [ `checkIfInstalled parallel` ] || [ `checkIfInstalled mysql` ] ||
+fi
+
+if [ `checkIfInstalled parallel` ] || [ `checkIfInstalled mysql` ] ||
 	[ `checkIfInstalled curl` ] || [ `checkIfInstalled pgrep` ]; then
 	apt-get update 
 	apt-get install mysql-client curl parallel procps
-elif [ `checkIfInstalled pup` ]; then
+fi
+
+mysqlServer=$(service mysql status)
+
+if [ -z "$mysqlServer" ]; then
+	echo "MySql server not installed. Do you want to install it? [y|n]"
+	while read answer; do 
+		case "$answer" in
+			y)
+				apt-get install mysql-server
+				break 	
+				;;
+			n)
+				break
+				;;
+			*)
+				echo "Select [y|n]"
+		esac
+	done
+fi
+
+
+
+if [ `checkIfInstalled pup` ]; then
 	timestamp=`date "+%s"`
 	godir="~/.go"
 	godirtime="$godir-$timestamp"
@@ -36,7 +61,9 @@ elif [ `checkIfInstalled pup` ]; then
 	else 
 		echo "Cannot setup Go at this time"
 	fi
-elif [ ! -f $mysqlAuthFile ]; then 
+fi
+
+if [ ! -f $mysqlAuthFile ]; then 
 	echo "Mysql auth config file not found"
 	echo "Creating at: $mysqlAuthFile"
 	echo -e "[client]\nuser=\"\"\npassword=\"\"\nhost=\"\"\ndatabase=\"\"" > $mysqlAuthFile
