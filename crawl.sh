@@ -4,7 +4,7 @@
 
 source crawler.conf.sh
 trap dontExit EXIT
-trap "killme" INT 
+trap killme INT 
 
 function killme() {
 	pgrep -f "$0" | parallel pgrep -P {} | parallel kill -9 {} # Kill child procs
