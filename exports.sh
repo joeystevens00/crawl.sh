@@ -11,5 +11,4 @@ export -f ifNoDupesThenLog
 export -f checkForDupes
 export -f doNothing
 export -f removeWhiteSpace
-export -f cleanMysteryCharacters
 export -f overwriteTmpFile
